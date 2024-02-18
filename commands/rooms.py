@@ -125,24 +125,24 @@ class Room(GroupCog):
 
         if message.author.id in self.locked:
             return await message.add_reaction("⚠")
-
-        self.locked.add(message.author.id)
-
-        resp = await self.chatroom.send_message(
-            message.author, message, self.pre_process
-        )
-        print(resp)
-        self.locked.remove(message.author.id)
-
-        hook = self.webhooks.get(message.channel.id)
-        if not hook:
-            for webhook in await message.channel.webhooks():
-                if webhook.user.id == self.bot.user.id:
-                    hook = webhook
-                    break
-            else:
-                hook = await message.channel.create_webhook(name="ChatRoom")
-            self.webhooks[message.channel.id] = hook
+        async with message.channel.typing():
+            self.locked.add(message.author.id)
+    
+            resp = await self.chatroom.send_message(
+                message.author, message, self.pre_process
+            )
+    
+            self.locked.remove(message.author.id)
+    
+            hook = self.webhooks.get(message.channel.id)
+            if not hook:
+                for webhook in await message.channel.webhooks():
+                    if webhook.user.id == self.bot.user.id:
+                        hook = webhook
+                        break
+                else:
+                    hook = await message.channel.create_webhook(name="ChatRoom")
+                self.webhooks[message.channel.id] = hook
         await hook.send(
             content=message.author.mention + "\n" + resp.text,
             username=resp.display_name,
